@@ -12,29 +12,47 @@ class SpeechRecognizerManager(
     context: Context,
     private val onResult: (String) -> Unit,
     private val onError: (SpeechRecognitionFailure) -> Unit,
+    private val onReady: () -> Unit,
 ) {
     private val appContext = context.applicationContext
     private var isListening = false
+    private var lastPartialResult: String = ""
 
     private val recognizer = SpeechRecognizer.createSpeechRecognizer(context).apply {
         setRecognitionListener(object : RecognitionListener {
-            override fun onReadyForSpeech(params: Bundle?) = Unit
+            override fun onReadyForSpeech(params: Bundle?) {
+                onReady()
+            }
+
             override fun onBeginningOfSpeech() = Unit
             override fun onRmsChanged(rmsdB: Float) = Unit
             override fun onBufferReceived(buffer: ByteArray?) = Unit
             override fun onEndOfSpeech() = Unit
-            override fun onPartialResults(partialResults: Bundle?) = Unit
+            override fun onPartialResults(partialResults: Bundle?) {
+                lastPartialResult = partialResults
+                    ?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
+                    ?.firstOrNull()
+                    .orEmpty()
+            }
+
             override fun onEvent(eventType: Int, params: Bundle?) = Unit
 
             override fun onError(error: Int) {
                 isListening = false
-                onError(speechRecognitionFailureFor(error))
+                val partial = lastPartialResult.trim()
+                lastPartialResult = ""
+                if (error == SpeechRecognizer.ERROR_NO_MATCH && partial.isNotBlank()) {
+                    onResult(partial)
+                } else {
+                    onError(speechRecognitionFailureFor(error))
+                }
             }
 
             override fun onResults(results: Bundle?) {
                 isListening = false
                 val matches = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION).orEmpty()
-                val text = matches.firstOrNull().orEmpty()
+                val text = matches.firstOrNull().orEmpty().ifBlank { lastPartialResult }
+                lastPartialResult = ""
                 if (text.isBlank()) {
                     onError(speechRecognitionFailureFor(SpeechRecognizer.ERROR_NO_MATCH))
                 } else {
@@ -47,7 +65,9 @@ class SpeechRecognizerManager(
     private val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
         putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
         putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.KOREAN.toLanguageTag())
-        putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, false)
+        putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE, Locale.KOREAN.toLanguageTag())
+        putExtra(RecognizerIntent.EXTRA_ONLY_RETURN_LANGUAGE_PREFERENCE, false)
+        putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
         putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 3)
         putExtra(RecognizerIntent.EXTRA_CALLING_PACKAGE, appContext.packageName)
     }
@@ -66,6 +86,7 @@ class SpeechRecognizerManager(
             recognizer.cancel()
         }
         isListening = true
+        lastPartialResult = ""
         recognizer.startListening(intent)
     }
 
@@ -77,6 +98,7 @@ class SpeechRecognizerManager(
 
     fun destroy() {
         isListening = false
+        lastPartialResult = ""
         recognizer.destroy()
     }
 }

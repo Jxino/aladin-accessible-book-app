@@ -147,7 +147,7 @@ private fun PermissionAccessButton(
 @Composable
 private fun StatusText(uiState: BookSearchUiState, hasAudioPermission: Boolean) {
     val message = when (uiState) {
-        BookSearchUiState.Initial -> if (hasAudioPermission) "음성 버튼을 누르고 전자책 이름을 말씀하세요." else "마이크 권한을 허용해 주세요."
+        BookSearchUiState.Initial -> if (hasAudioPermission) "음성 버튼을 누른 뒤 버튼이 빨간색으로 바뀌면 전자책 이름을 말씀하세요." else "마이크 권한을 허용해 주세요."
         BookSearchUiState.PermissionDenied -> "마이크 권한이 필요합니다."
         BookSearchUiState.Listening -> "듣고 있습니다. 버튼에서 손을 떼면 인식을 마칩니다."
         is BookSearchUiState.SpeechNotRecognized -> uiState.message

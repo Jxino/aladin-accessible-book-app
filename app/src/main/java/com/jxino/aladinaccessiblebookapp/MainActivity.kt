@@ -63,6 +63,7 @@ class MainActivity : ComponentActivity() {
                     context = this,
                     onResult = viewModel::onSpeechText,
                     onError = { failure -> viewModel.onSpeechError(failure.userMessage) },
+                    onReady = viewModel::onListeningStarted,
                 )
             }
 
@@ -108,7 +109,6 @@ class MainActivity : ComponentActivity() {
                 },
                 onStartListening = {
                     if (hasAudioPermission) {
-                        viewModel.onListeningStarted()
                         speechManager.startListening()
                     } else {
                         hasRequestedAudioPermission = true
