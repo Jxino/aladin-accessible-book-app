@@ -56,9 +56,9 @@ class BookSearchViewModel(
         handleCommand(command)
     }
 
-    fun onSpeechError() {
-        _uiState.value = BookSearchUiState.SpeechNotRecognized
-        speakErrorIfAvailable()
+    fun onSpeechError(message: String = "음성을 인식하지 못했습니다. 다시 말씀해 주세요.") {
+        _uiState.value = BookSearchUiState.SpeechNotRecognized(message)
+        speak(message)
     }
 
     fun onResultClicked(result: BookSearchResult) {
@@ -81,7 +81,7 @@ class BookSearchViewModel(
             is ParsedCommand.SelectResult -> selectByIndex(command.index)
             is ParsedCommand.SelectByTitle -> selectByTitle(command.titleKeyword)
             ParsedCommand.Unknown -> {
-                _uiState.value = BookSearchUiState.SpeechNotRecognized
+                _uiState.value = BookSearchUiState.SpeechNotRecognized()
                 speak("명령을 이해하지 못했습니다. 검색어 또는 결과 번호를 다시 말씀해 주세요.")
             }
         }
@@ -115,7 +115,7 @@ class BookSearchViewModel(
     private fun selectByIndex(index: Int) {
         val result = currentResults.getOrNull(index)
         if (result == null) {
-            _uiState.value = BookSearchUiState.SpeechNotRecognized
+            _uiState.value = BookSearchUiState.SpeechNotRecognized("해당 번호의 검색 결과가 없습니다.")
             speak("해당 번호의 검색 결과가 없습니다.")
         } else {
             openResult(result)
@@ -127,7 +127,7 @@ class BookSearchViewModel(
         when (matches.size) {
             1 -> openResult(matches.first())
             0 -> {
-                _uiState.value = BookSearchUiState.SpeechNotRecognized
+                _uiState.value = BookSearchUiState.SpeechNotRecognized("해당 제목의 검색 결과를 찾지 못했습니다.")
                 speak("해당 제목의 검색 결과를 찾지 못했습니다.")
             }
             else -> {

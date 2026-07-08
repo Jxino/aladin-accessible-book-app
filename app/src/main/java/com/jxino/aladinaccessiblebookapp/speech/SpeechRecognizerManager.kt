@@ -11,9 +11,12 @@ import java.util.Locale
 class SpeechRecognizerManager(
     context: Context,
     private val onResult: (String) -> Unit,
-    private val onError: () -> Unit,
+    private val onError: (SpeechRecognitionFailure) -> Unit,
 ) {
-    private val recognizer = SpeechRecognizer.createSpeechRecognizer(context.applicationContext).apply {
+    private val appContext = context.applicationContext
+    private var isListening = false
+
+    private val recognizer = SpeechRecognizer.createSpeechRecognizer(context).apply {
         setRecognitionListener(object : RecognitionListener {
             override fun onReadyForSpeech(params: Bundle?) = Unit
             override fun onBeginningOfSpeech() = Unit
@@ -24,13 +27,19 @@ class SpeechRecognizerManager(
             override fun onEvent(eventType: Int, params: Bundle?) = Unit
 
             override fun onError(error: Int) {
-                onError()
+                isListening = false
+                onError(speechRecognitionFailureFor(error))
             }
 
             override fun onResults(results: Bundle?) {
+                isListening = false
                 val matches = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION).orEmpty()
                 val text = matches.firstOrNull().orEmpty()
-                if (text.isBlank()) onError() else onResult(text)
+                if (text.isBlank()) {
+                    onError(speechRecognitionFailureFor(SpeechRecognizer.ERROR_NO_MATCH))
+                } else {
+                    onResult(text)
+                }
             }
         })
     }
@@ -39,17 +48,35 @@ class SpeechRecognizerManager(
         putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
         putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.KOREAN.toLanguageTag())
         putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, false)
+        putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 3)
+        putExtra(RecognizerIntent.EXTRA_CALLING_PACKAGE, appContext.packageName)
     }
 
     fun startListening() {
+        if (!SpeechRecognizer.isRecognitionAvailable(appContext)) {
+            onError(
+                SpeechRecognitionFailure(
+                    code = -1,
+                    userMessage = "이 기기에서 사용할 수 있는 Android 음성 인식 서비스가 없습니다. Google 앱 또는 Google 음성 인식 서비스를 설치하거나 실제 Android 기기에서 다시 시도해 주세요.",
+                ),
+            )
+            return
+        }
+        if (isListening) {
+            recognizer.cancel()
+        }
+        isListening = true
         recognizer.startListening(intent)
     }
 
     fun stopListening() {
-        recognizer.stopListening()
+        if (isListening) {
+            recognizer.stopListening()
+        }
     }
 
     fun destroy() {
+        isListening = false
         recognizer.destroy()
     }
 }

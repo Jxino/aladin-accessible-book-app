@@ -6,7 +6,7 @@ sealed class BookSearchUiState {
     data object Initial : BookSearchUiState()
     data object PermissionDenied : BookSearchUiState()
     data object Listening : BookSearchUiState()
-    data object SpeechNotRecognized : BookSearchUiState()
+    data class SpeechNotRecognized(val message: String = "음성을 인식하지 못했습니다. 다시 말씀해 주세요.") : BookSearchUiState()
     data object Searching : BookSearchUiState()
     data class Results(val query: String, val results: List<BookSearchResult>) : BookSearchUiState()
     data object NoResults : BookSearchUiState()

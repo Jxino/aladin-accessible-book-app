@@ -30,7 +30,7 @@ class BasicResultAnnouncer : ResultAnnouncer {
         BookSearchUiState.ApiKeyMissing -> "알라딘 API 키가 설정되지 않았습니다"
         BookSearchUiState.NoResults -> "전자책 검색 결과가 없습니다."
         is BookSearchUiState.NetworkError -> "네트워크 오류가 발생했습니다. ${state.message}"
-        BookSearchUiState.SpeechNotRecognized -> "음성을 인식하지 못했습니다. 다시 말씀해 주세요."
+        is BookSearchUiState.SpeechNotRecognized -> state.message
         BookSearchUiState.AmbiguousSelection -> "몇 번을 선택할지 다시 말씀해 주세요."
         else -> null
     }

@@ -62,7 +62,7 @@ class MainActivity : ComponentActivity() {
                 SpeechRecognizerManager(
                     context = this,
                     onResult = viewModel::onSpeechText,
-                    onError = viewModel::onSpeechError,
+                    onError = { failure -> viewModel.onSpeechError(failure.userMessage) },
                 )
             }
 

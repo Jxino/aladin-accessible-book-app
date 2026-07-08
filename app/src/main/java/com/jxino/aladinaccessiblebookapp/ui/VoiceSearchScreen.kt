@@ -150,7 +150,7 @@ private fun StatusText(uiState: BookSearchUiState, hasAudioPermission: Boolean) 
         BookSearchUiState.Initial -> if (hasAudioPermission) "음성 버튼을 누르고 전자책 이름을 말씀하세요." else "마이크 권한을 허용해 주세요."
         BookSearchUiState.PermissionDenied -> "마이크 권한이 필요합니다."
         BookSearchUiState.Listening -> "듣고 있습니다. 버튼에서 손을 떼면 인식을 마칩니다."
-        BookSearchUiState.SpeechNotRecognized -> "음성을 인식하지 못했습니다. 다시 말씀해 주세요."
+        is BookSearchUiState.SpeechNotRecognized -> uiState.message
         BookSearchUiState.Searching -> "알라딘에서 전자책을 검색 중입니다."
         is BookSearchUiState.Results -> "\"${uiState.query}\" 전자책 검색 결과입니다."
         BookSearchUiState.NoResults -> "전자책 검색 결과가 없습니다."
