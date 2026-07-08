@@ -110,12 +110,38 @@ ALADIN_TTB_KEY=your_aladin_ttb_key_here
 
 일반 테스터는 Android Studio 없이 APK 파일만 설치해서 앱 화면과 음성 인식을 확인할 수 있습니다.
 
-1. 개발자가 Android Studio에서 APK를 빌드하거나 GitHub Releases에 APK를 업로드합니다.
-2. 테스터는 Android 기기에서 APK 파일을 다운로드합니다.
-3. Android가 “알 수 없는 앱 설치” 허용을 요구하면, 다운로드에 사용한 앱 또는 파일 관리자에 대해 한 번만 허용합니다.
-4. APK를 설치합니다.
-5. 앱을 실행하고 마이크 권한을 허용합니다.
-6. 하단 중앙의 큰 `말하기` 버튼을 누르고 있는 동안 검색어를 말합니다.
+GitHub Releases에 APK가 올라와 있는 경우:
+
+1. Android 기기에서 이 저장소의 Releases 페이지를 엽니다.
+   - `https://github.com/Jxino/aladin-accessible-book-app/releases`
+2. 최신 릴리스를 선택합니다.
+3. `Assets` 영역을 펼칩니다.
+4. `.apk`로 끝나는 파일을 누릅니다.
+5. 브라우저가 다운로드 경고를 표시하면 APK 파일 다운로드를 계속합니다.
+6. 다운로드가 끝나면 알림 또는 파일 관리자에서 APK 파일을 엽니다.
+7. Android가 “알 수 없는 앱 설치” 허용을 요구하면, 다운로드에 사용한 브라우저 또는 파일 관리자에 대해 한 번만 허용합니다.
+8. 설치 화면에서 `설치`를 누릅니다.
+9. 설치가 끝나면 `열기`를 누르거나 앱 목록에서 `Aladin Accessible Book`을 실행합니다.
+10. 앱에서 마이크 권한을 허용합니다.
+11. 하단 중앙의 큰 `말하기` 버튼을 누르고 있는 동안 검색어를 말합니다.
+
+GitHub Releases에 APK가 없는 경우:
+
+1. 일반 테스터는 GitHub 화면만으로 앱을 바로 설치할 수 없습니다.
+2. 개발자가 Android Studio에서 APK를 빌드한 뒤 파일을 직접 전달하거나, GitHub Releases에 APK를 업로드해야 합니다.
+3. APK 파일을 받은 뒤에는 위의 6번부터 진행합니다.
+
+개발자가 APK를 직접 빌드하는 명령:
+
+```bash
+./gradlew assembleDebug
+```
+
+빌드된 APK 위치:
+
+```text
+app/build/outputs/apk/debug/app-debug.apk
+```
 
 현재 MVP는 API 키를 `local.properties`에서 빌드 시점에 읽어 `BuildConfig.ALADIN_TTB_KEY`로 포함합니다. 따라서 APK로 실제 알라딘 검색까지 테스트하려면 API 키가 포함된 빌드가 필요합니다. API 키가 포함되지 않은 APK에서도 음성 인식 성공 여부는 확인할 수 있습니다.
 
