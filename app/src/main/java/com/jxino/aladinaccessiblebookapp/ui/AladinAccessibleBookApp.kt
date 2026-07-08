@@ -8,6 +8,7 @@ fun AladinAccessibleBookApp(
     uiState: BookSearchUiState,
     screen: AppScreen,
     hasAudioPermission: Boolean,
+    shouldOpenAppSettingsForAudio: Boolean,
     onRequestPermission: () -> Unit,
     onStartListening: () -> Unit,
     onStopListening: () -> Unit,
@@ -20,6 +21,7 @@ fun AladinAccessibleBookApp(
             AppScreen.VoiceSearch -> VoiceSearchScreen(
                 uiState = uiState,
                 hasAudioPermission = hasAudioPermission,
+                shouldOpenAppSettingsForAudio = shouldOpenAppSettingsForAudio,
                 onRequestPermission = onRequestPermission,
                 onStartListening = onStartListening,
                 onStopListening = onStopListening,

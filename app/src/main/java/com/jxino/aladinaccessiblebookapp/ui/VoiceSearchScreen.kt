@@ -28,7 +28,6 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -49,6 +48,7 @@ import java.util.Locale
 fun VoiceSearchScreen(
     uiState: BookSearchUiState,
     hasAudioPermission: Boolean,
+    shouldOpenAppSettingsForAudio: Boolean,
     onRequestPermission: () -> Unit,
     onStartListening: () -> Unit,
     onStopListening: () -> Unit,
@@ -60,8 +60,9 @@ fun VoiceSearchScreen(
             .background(MaterialTheme.colorScheme.background)
             .padding(20.dp),
     ) {
-        PermissionToggleButton(
+        PermissionAccessButton(
             hasAudioPermission = hasAudioPermission,
+            shouldOpenAppSettings = shouldOpenAppSettingsForAudio,
             onClick = onRequestPermission,
             modifier = Modifier
                 .align(Alignment.TopEnd)
@@ -92,40 +93,52 @@ fun VoiceSearchScreen(
 }
 
 @Composable
-private fun PermissionToggleButton(
+private fun PermissionAccessButton(
     hasAudioPermission: Boolean,
+    shouldOpenAppSettings: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val description = if (hasAudioPermission) {
-        "마이크 권한 허용됨"
+    val statusText = if (hasAudioPermission) "마이크 허용됨" else "마이크 권한 필요"
+    val actionText = when {
+        hasAudioPermission -> "완료"
+        shouldOpenAppSettings -> "설정 열기"
+        else -> "권한 허용"
+    }
+    val description = when {
+        hasAudioPermission -> "마이크 권한이 허용되어 있습니다."
+        shouldOpenAppSettings -> "마이크 권한이 거부되어 있습니다. Android 설정에서 권한을 열려면 누르세요."
+        else -> "마이크 권한 요청 버튼. 눌러서 권한 요청을 시작하세요."
+    }
+    val actionColor = if (hasAudioPermission) {
+        MaterialTheme.colorScheme.primary
     } else {
-        "마이크 권한 필요. 눌러서 허용하세요."
+        MaterialTheme.colorScheme.error
     }
     Surface(
         onClick = onClick,
-        shape = RoundedCornerShape(28.dp),
+        shape = RoundedCornerShape(8.dp),
         color = MaterialTheme.colorScheme.surface,
         tonalElevation = 3.dp,
         shadowElevation = 2.dp,
         modifier = modifier
             .semantics { contentDescription = description },
     ) {
-        Row(
-            modifier = Modifier.padding(start = 14.dp, end = 10.dp, top = 8.dp, bottom = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        Column(
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+            horizontalAlignment = Alignment.End,
         ) {
             Text(
-                text = "마이크",
-                fontSize = 18.sp,
+                text = statusText,
+                fontSize = 17.sp,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface,
             )
-            Switch(
-                checked = hasAudioPermission,
-                onCheckedChange = { onClick() },
-                modifier = Modifier.semantics { contentDescription = description },
+            Text(
+                text = actionText,
+                fontSize = 15.sp,
+                fontWeight = FontWeight.Bold,
+                color = actionColor,
             )
         }
     }

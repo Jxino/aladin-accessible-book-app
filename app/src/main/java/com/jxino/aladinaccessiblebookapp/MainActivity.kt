@@ -1,7 +1,10 @@
 package com.jxino.aladinaccessiblebookapp
 
 import android.Manifest
+import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
+import android.provider.Settings
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
@@ -11,8 +14,12 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.jxino.aladinaccessiblebookapp.data.AladinRepository
 import com.jxino.aladinaccessiblebookapp.domain.BasicResultAnnouncer
 import com.jxino.aladinaccessiblebookapp.domain.RuleBasedUserUtteranceParser
@@ -40,8 +47,14 @@ class MainActivity : ComponentActivity() {
             var hasAudioPermission by remember {
                 mutableStateOf(checkSelfPermission(Manifest.permission.RECORD_AUDIO) == android.content.pm.PackageManager.PERMISSION_GRANTED)
             }
+            var hasRequestedAudioPermission by rememberSaveable { mutableStateOf(false) }
+            var shouldOpenAppSettingsForAudio by rememberSaveable { mutableStateOf(false) }
+            val lifecycleOwner = LocalLifecycleOwner.current
             val permissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
                 hasAudioPermission = granted
+                shouldOpenAppSettingsForAudio = hasRequestedAudioPermission &&
+                    !granted &&
+                    !shouldShowRequestPermissionRationale(Manifest.permission.RECORD_AUDIO)
                 if (!granted) viewModel.onPermissionDenied()
             }
             val ttsManager = remember { TtsManager(this) }
@@ -64,16 +77,41 @@ class MainActivity : ComponentActivity() {
                 }
             }
 
+            androidx.compose.runtime.DisposableEffect(lifecycleOwner) {
+                val observer = LifecycleEventObserver { _, event ->
+                    if (event == Lifecycle.Event.ON_RESUME) {
+                        hasAudioPermission = checkSelfPermission(Manifest.permission.RECORD_AUDIO) == android.content.pm.PackageManager.PERMISSION_GRANTED
+                        if (hasAudioPermission) {
+                            shouldOpenAppSettingsForAudio = false
+                        }
+                    }
+                }
+                lifecycleOwner.lifecycle.addObserver(observer)
+                onDispose {
+                    lifecycleOwner.lifecycle.removeObserver(observer)
+                }
+            }
+
             AladinAccessibleBookApp(
                 uiState = uiState,
                 screen = screen,
                 hasAudioPermission = hasAudioPermission,
-                onRequestPermission = { permissionLauncher.launch(Manifest.permission.RECORD_AUDIO) },
+                shouldOpenAppSettingsForAudio = shouldOpenAppSettingsForAudio,
+                onRequestPermission = {
+                    if (hasAudioPermission) return@AladinAccessibleBookApp
+                    if (shouldOpenAppSettingsForAudio) {
+                        openAppSettings()
+                    } else {
+                        hasRequestedAudioPermission = true
+                        permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                    }
+                },
                 onStartListening = {
                     if (hasAudioPermission) {
                         viewModel.onListeningStarted()
                         speechManager.startListening()
                     } else {
+                        hasRequestedAudioPermission = true
                         permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
                     }
                 },
@@ -83,5 +121,12 @@ class MainActivity : ComponentActivity() {
                 onWebViewLoadingChanged = viewModel::onWebViewLoadingChanged,
             )
         }
+    }
+
+    private fun openAppSettings() {
+        val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+            data = Uri.fromParts("package", packageName, null)
+        }
+        startActivity(intent)
     }
 }
