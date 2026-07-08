@@ -82,6 +82,7 @@ fun VoiceSearchScreen(
         }
 
         PushToTalkButton(
+            isPreparing = uiState == BookSearchUiState.PreparingListening,
             isListening = uiState == BookSearchUiState.Listening,
             onStartListening = onStartListening,
             onStopListening = onStopListening,
@@ -149,6 +150,7 @@ private fun StatusText(uiState: BookSearchUiState, hasAudioPermission: Boolean) 
     val message = when (uiState) {
         BookSearchUiState.Initial -> if (hasAudioPermission) "음성 버튼을 누른 뒤 버튼이 빨간색으로 바뀌면 전자책 이름을 말씀하세요." else "마이크 권한을 허용해 주세요."
         BookSearchUiState.PermissionDenied -> "마이크 권한이 필요합니다."
+        BookSearchUiState.PreparingListening -> "음성 인식을 준비 중입니다. 잠시만 기다려 주세요."
         BookSearchUiState.Listening -> "듣고 있습니다. 버튼에서 손을 떼면 인식을 마칩니다."
         is BookSearchUiState.SpeechNotRecognized -> uiState.message
         BookSearchUiState.Searching -> "알라딘에서 전자책을 검색 중입니다."
@@ -224,6 +226,7 @@ private fun SearchResultItem(
 
 @Composable
 private fun PushToTalkButton(
+    isPreparing: Boolean,
     isListening: Boolean,
     onStartListening: () -> Unit,
     onStopListening: () -> Unit,
@@ -234,7 +237,11 @@ private fun PushToTalkButton(
         onClick = {},
         shape = CircleShape,
         colors = ButtonDefaults.buttonColors(
-            containerColor = if (isListening) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
+            containerColor = when {
+                isListening -> MaterialTheme.colorScheme.error
+                isPreparing -> MaterialTheme.colorScheme.secondary
+                else -> MaterialTheme.colorScheme.primary
+            },
             contentColor = MaterialTheme.colorScheme.onPrimary,
         ),
         contentPadding = PaddingValues(0.dp),
@@ -254,7 +261,15 @@ private fun PushToTalkButton(
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Icon(Icons.Default.Mic, contentDescription = null, modifier = Modifier.size(62.dp))
-            Text(if (isListening) "듣는 중" else "말하기", fontSize = 26.sp, fontWeight = FontWeight.Bold)
+            Text(
+                text = when {
+                    isListening -> "듣는 중"
+                    isPreparing -> "준비 중"
+                    else -> "말하기"
+                },
+                fontSize = 26.sp,
+                fontWeight = FontWeight.Bold,
+            )
         }
     }
 }

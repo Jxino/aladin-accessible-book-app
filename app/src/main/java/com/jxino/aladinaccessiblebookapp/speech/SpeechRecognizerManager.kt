@@ -3,6 +3,8 @@ package com.jxino.aladinaccessiblebookapp.speech
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
@@ -15,12 +17,28 @@ class SpeechRecognizerManager(
     private val onReady: () -> Unit,
 ) {
     private val appContext = context.applicationContext
+    private val mainHandler = Handler(Looper.getMainLooper())
     private var isListening = false
+    private var isReady = false
     private var lastPartialResult: String = ""
+    private val readyTimeoutRunnable: Runnable = Runnable {
+        if (isListening && !isReady) {
+            isListening = false
+            recognizer.cancel()
+            onError(
+                SpeechRecognitionFailure(
+                    code = -2,
+                    userMessage = "Android 음성 인식 서비스가 응답하지 않습니다. Google 앱의 음성 인식 설정을 확인하거나 기기를 다시 시작한 뒤 시도해 주세요.",
+                ),
+            )
+        }
+    }
 
-    private val recognizer = SpeechRecognizer.createSpeechRecognizer(context).apply {
+    private val recognizer: SpeechRecognizer = SpeechRecognizer.createSpeechRecognizer(context).apply {
         setRecognitionListener(object : RecognitionListener {
             override fun onReadyForSpeech(params: Bundle?) {
+                isReady = true
+                mainHandler.removeCallbacks(readyTimeoutRunnable)
                 onReady()
             }
 
@@ -39,6 +57,8 @@ class SpeechRecognizerManager(
 
             override fun onError(error: Int) {
                 isListening = false
+                isReady = false
+                mainHandler.removeCallbacks(readyTimeoutRunnable)
                 val partial = lastPartialResult.trim()
                 lastPartialResult = ""
                 if (error == SpeechRecognizer.ERROR_NO_MATCH && partial.isNotBlank()) {
@@ -50,6 +70,8 @@ class SpeechRecognizerManager(
 
             override fun onResults(results: Bundle?) {
                 isListening = false
+                isReady = false
+                mainHandler.removeCallbacks(readyTimeoutRunnable)
                 val matches = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION).orEmpty()
                 val text = matches.firstOrNull().orEmpty().ifBlank { lastPartialResult }
                 lastPartialResult = ""
@@ -86,19 +108,24 @@ class SpeechRecognizerManager(
             recognizer.cancel()
         }
         isListening = true
+        isReady = false
         lastPartialResult = ""
         recognizer.startListening(intent)
+        mainHandler.postDelayed(readyTimeoutRunnable, 5_000L)
     }
 
     fun stopListening() {
         if (isListening) {
+            mainHandler.removeCallbacks(readyTimeoutRunnable)
             recognizer.stopListening()
         }
     }
 
     fun destroy() {
         isListening = false
+        isReady = false
         lastPartialResult = ""
+        mainHandler.removeCallbacks(readyTimeoutRunnable)
         recognizer.destroy()
     }
 }

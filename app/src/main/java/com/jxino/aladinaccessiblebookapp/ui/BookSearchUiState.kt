@@ -5,6 +5,7 @@ import com.jxino.aladinaccessiblebookapp.domain.BookSearchResult
 sealed class BookSearchUiState {
     data object Initial : BookSearchUiState()
     data object PermissionDenied : BookSearchUiState()
+    data object PreparingListening : BookSearchUiState()
     data object Listening : BookSearchUiState()
     data class SpeechNotRecognized(val message: String = "음성을 인식하지 못했습니다. 다시 말씀해 주세요.") : BookSearchUiState()
     data object Searching : BookSearchUiState()

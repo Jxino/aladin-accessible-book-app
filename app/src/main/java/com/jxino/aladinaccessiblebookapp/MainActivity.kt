@@ -109,6 +109,7 @@ class MainActivity : ComponentActivity() {
                 },
                 onStartListening = {
                     if (hasAudioPermission) {
+                        viewModel.onListeningPreparing()
                         speechManager.startListening()
                     } else {
                         hasRequestedAudioPermission = true

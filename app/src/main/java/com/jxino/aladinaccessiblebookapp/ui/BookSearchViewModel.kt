@@ -41,6 +41,10 @@ class BookSearchViewModel(
         speak("마이크 권한이 필요합니다.")
     }
 
+    fun onListeningPreparing() {
+        _uiState.value = BookSearchUiState.PreparingListening
+    }
+
     fun onListeningStarted() {
         _uiState.value = BookSearchUiState.Listening
     }
